@@ -222,6 +222,7 @@ async def manager_user(db_session: AsyncSession):
 @pytest.fixture
 def user_base_data():
     return {
+        "nickname": "johnny_doe",
         "first_name": "John",
         "last_name": "Doe",
         "email": "john.doe@example.com",
@@ -258,6 +259,8 @@ def user_update_data():
 @pytest.fixture
 def user_response_data():
     return {
+        "id": str(uuid4()), 
+        "nickname": "testuser", 
         "first_name": "Test",
         "last_name": "User",
         "email": "test@example.com",
@@ -281,7 +284,7 @@ async def admin_token(admin_user):
 
 @pytest.fixture
 async def manager_token(manager_user):
-    return create_access_token(data={"sub": str(manager_user.id), "role": admin_user.role.value})
+    return create_access_token(data={"sub": str(manager_user.id)})
 
 @patch("app.services.email_service.EmailService.send_user_email", new_callable=AsyncMock)
 @pytest.mark.asyncio
