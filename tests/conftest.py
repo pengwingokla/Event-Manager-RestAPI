@@ -273,7 +273,7 @@ def user_response_data():
 
 @pytest.fixture
 def login_request_data():
-    return {"username": "john_doe_123", "password": "SecurePassword123!"}
+    return {"email": "john_doe_123", "password": "SecurePassword123!"}
 
 @pytest.fixture
 async def user_token(user):
@@ -285,7 +285,8 @@ async def admin_token(admin_user):
 
 @pytest.fixture
 async def manager_token(manager_user):
-    return create_access_token(data={"sub": str(manager_user.id)})
+    return create_access_token(data={"sub": str(manager_user.id),
+                                     "role": manager_user.role.value})
 
 @patch("app.services.email_service.EmailService.send_user_email", new_callable=AsyncMock)
 @pytest.mark.asyncio
