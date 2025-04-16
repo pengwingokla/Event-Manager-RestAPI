@@ -37,6 +37,7 @@ from app.utils.security import hash_password
 from app.utils.template_manager import TemplateManager
 from app.services.email_service import EmailService
 from app.services.jwt_service import create_access_token
+from app.utils.smtp_connection import SMTPClient
 
 fake = Faker()
 
@@ -292,3 +293,7 @@ async def test_send_markdown_email(mock_send, email_service):
     user_data = {...}
     await email_service.send_user_email(user_data, "email_verification")
     mock_send.assert_awaited_once()
+
+@pytest.fixture(autouse=True)
+def mock_smtp(monkeypatch):
+    monkeypatch.setattr(SMTPClient, "send_email", lambda self, subject, content, recipient: None)
