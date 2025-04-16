@@ -26,6 +26,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, scoped_session
 from faker import Faker
+from unittest.mock import AsyncMock, patch
 
 # Application-specific imports
 from app.main import app
@@ -163,7 +164,13 @@ async def unverified_user(db_session):
 @pytest.fixture(scope="function")
 async def users_with_same_role_50_users(db_session):
     users = []
+    seen_nicknames = set()
+
     for _ in range(50):
+        nickname = fake.user_name()
+        while nickname in seen_nicknames:
+            nickname = fake.user_name()
+        seen_nicknames.add(nickname)
         user_data = {
             "nickname": fake.user_name(),
             "first_name": fake.first_name(),
@@ -215,12 +222,13 @@ async def manager_user(db_session: AsyncSession):
 @pytest.fixture
 def user_base_data():
     return {
-        "username": "john_doe_123",
+        "first_name": "John",
+        "last_name": "Doe",
         "email": "john.doe@example.com",
-        "full_name": "John Doe",
         "bio": "I am a software engineer with over 5 years of experience.",
         "profile_picture_url": "https://example.com/profile_pictures/john_doe.jpg"
     }
+
 
 @pytest.fixture
 def user_base_data_invalid():
@@ -240,8 +248,9 @@ def user_create_data(user_base_data):
 @pytest.fixture
 def user_update_data():
     return {
+        "first_name": "John",
+        "last_name": "Doe",
         "email": "john.doe.new@example.com",
-        "full_name": "John H. Doe",
         "bio": "I specialize in backend development with Python and Node.js.",
         "profile_picture_url": "https://example.com/profile_pictures/john_doe_updated.jpg"
     }
@@ -249,8 +258,8 @@ def user_update_data():
 @pytest.fixture
 def user_response_data():
     return {
-        "id": "unique-id-string",
-        "username": "testuser",
+        "first_name": "Test",
+        "last_name": "User",
         "email": "test@example.com",
         "last_login_at": datetime.now(),
         "created_at": datetime.now(),
@@ -261,3 +270,22 @@ def user_response_data():
 @pytest.fixture
 def login_request_data():
     return {"username": "john_doe_123", "password": "SecurePassword123!"}
+
+@pytest.fixture
+async def user_token(user):
+    return create_access_token(data={"sub": str(user.id), "role": user.role.value})
+
+@pytest.fixture
+async def admin_token(admin_user):
+    return create_access_token(data={"sub": str(admin_user.id), "role": admin_user.role.value})
+
+@pytest.fixture
+async def manager_token(manager_user):
+    return create_access_token(data={"sub": str(manager_user.id), "role": admin_user.role.value})
+
+@patch("app.services.email_service.EmailService.send_user_email", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_send_markdown_email(mock_send, email_service):
+    user_data = {...}
+    await email_service.send_user_email(user_data, "email_verification")
+    mock_send.assert_awaited_once()
